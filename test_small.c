@@ -10,18 +10,25 @@ int main(void)
     int *p;
     int *q;
 
-    for (int i = 0; i < 100000; i++)
+    /* Minimal example demonstrating automatic collection */
+    for (int i = 0; i < 5; i++)
     {
-        printf("i: %d\n", i);
         p = gc_malloc(gc, (void **)&p, sizeof(*p));
         q = gc_malloc_atomic(gc, (void **)&q, sizeof(*q));
-        *p = 0;
-        *q = 0;
+        *p = i;
+        *q = i * 2;
 
+        /* Realloc q to demonstrate automatic root update */
         q = gc_realloc(gc, q, 2 * sizeof(*q));
+
+#ifdef GC_DEBUG
+        printf("[TEST_SMALL] Iteration %d, heap size: %zu\n", i, gc_get_heap_size(gc));
+#endif
     }
 
+    /* Collect and print final stats */
     gc_collect(gc);
+    gc_print_stats(gc);
     gc_destroy(gc);
     return 0;
 }

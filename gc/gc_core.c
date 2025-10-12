@@ -20,6 +20,12 @@ t_gc_block *gc_create_block(t_gc_state *gc, size_t size, int atomic)
 
     gc->blocks = block;
     gc->total_payload += size;
+
+#ifdef GC_DEBUG
+    printf("[minigc] ALLOC block=%p payload=%p size=%zu atomic=%d\n",
+           (void*)block, block->payload, size, atomic);
+#endif
+
     return block;
 }
 
@@ -31,6 +37,12 @@ void gc_free_block(t_gc_state *gc, t_gc_block *prev, t_gc_block *block)
         gc->blocks = block->next;
 
     gc->total_payload -= block->size;
+
+#ifdef GC_DEBUG
+    printf("[minigc] FREE block=%p payload=%p size=%zu\n",
+           (void*)block, block->payload, block->size);
+#endif
+
     free(block);
 }
 

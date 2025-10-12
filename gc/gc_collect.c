@@ -3,6 +3,10 @@
 
 void gc_collect(t_gc_state *gc)
 {
+#ifdef GC_DEBUG
+    printf("[minigc] COLLECT START total_payload=%zu\n", gc->total_payload);
+#endif
+
     gc_mark_from_roots(gc);
     gc_sweep(gc);
 
@@ -11,6 +15,11 @@ void gc_collect(t_gc_state *gc)
     if (next < GC_DEFAULT_THRESHOLD)
         next = GC_DEFAULT_THRESHOLD;
     gc->next_threshold = next;
+
+#ifdef GC_DEBUG
+    printf("[minigc] COLLECT END total_payload=%zu next_threshold=%zu\n",
+           gc->total_payload, gc->next_threshold);
+#endif
 }
 
 size_t gc_get_heap_size(t_gc_state *gc)

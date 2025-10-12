@@ -2,14 +2,14 @@
 
 Garbage collector that follows the 42 school network's strict C code rules.
 
-# Running `tests.c`
+# Running `test_small.c`
 
-Without `-fsanitize=address,undefined`, the test passes, but uses UB:
 ```sh
-gcc -Wall -Wextra -Wpedantic -Werror -g gc/*.c tests.c -Igc -o tests && ./tests
+gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c test_small.c -Igc -o test_small && ./test_small
 ```
 
-With `-fsanitize=address,undefined` the test crashes:
+# Running `test_large.c`
+
 ```sh
-gcc -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c tests.c -Igc -o tests && ./tests
+gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c test_large.c -Igc -o test_large && ./test_large
 ```
