@@ -1,172 +1,95 @@
+Here’s a **simplified README** that keeps the essential information but trims unnecessary detail and long explanations:
+
+---
+
 # ft-gc
 
 > [!NOTE]
-> Developed with guidance from ChatGPT (OpenAI GPT-5 model). All generated code and explanations were manually reviewed and adapted to fit the 42 C coding style.
+> Developed with guidance from ChatGPT (OpenAI GPT-5 model).
+> **Disclaimer for 42 students:** Do **not** blindly copy-paste this code. Use it only for learning and reference.
 
-A compact, educational **garbage collector** written in C. Implements **mark-and-sweep GC**, manual root registration, and **automatic collection of stack-local objects**. Debug mode outputs detailed logging of allocations, frees, and roots.
-
-> [!TIP]
-> Compile with `-DGC_DEBUG` to see debug GC operations.
+A compact **mark-and-sweep garbage collector** in C. Supports **manual root registration** and **automatic collection of stack-local objects**. Use `-DGC_DEBUG` to see detailed GC operations.
 
 ---
 
-## Design Overview
+## Quick Start
 
-### Memory Model
+Include the GC in your project:
 
-* **Blocks (`t_gc_block`)**: Each allocation has metadata including `size`, `atomic` flag, `marked`, payload pointer, root pointer, and next block pointer.
-* **Roots (`t_gc_root`)**: Persistent pointers into the heap for marking reachable objects.
-* **State (`t_gc_state`)**: Tracks blocks, roots, total payload, last live size, next collection threshold, and an approximate stack base.
-* **Stack base**: Recorded at `gc_create()` to detect stack-local pointers and prevent registering them as persistent roots.
-
----
-
-## Core Principles
-
-1. **Allocation**
-
-   * `gc_malloc` / `gc_malloc_atomic` allocate memory and optionally register a persistent root.
-   * Temporary stack-local allocations (inside function scopes) are **not registered as roots** and are collectible once they go out of scope.
-
-2. **Reallocation**
-
-   * `gc_realloc` creates a new block and copies data.
-   * If the old block had a root, the root is updated to point to the new block.
-   * Old block is freed immediately after reallocation.
-
-3. **Garbage Collection**
-
-   * Triggered manually via `gc_collect()` or automatically if `total_payload > last_live + next_threshold`.
-   * **Mark-and-sweep strategy**:
-
-     * **Mark**: Traverse roots and mark reachable blocks.
-       *With transitive GC enabled, blocks reachable through other heap pointers are also marked.*
-     * **Sweep**: Free unmarked blocks.
-   * Updates `last_live` and calculates `next_threshold` as `max(2*last_live, GC_DEFAULT_THRESHOLD)`.
-
-4. **Root Management**
-
-   * Only non-stack addresses are registered as persistent roots.
-   * Stack-local variables are automatically collectible after their function scope exits.
-   * Atomic allocations (via `gc_malloc_atomic`) are not interpreted as containing pointers, but roots still track their block if provided.
-
----
-
-## Master Garbage Collector Lifecycle Diagram
-
-```mermaid
-flowchart TD
-    %% Persistent Roots
-    subgraph Roots
-        R1([Root A])
-        R2([Root B])
-    end
-
-    %% Heap blocks
-    B1["Block A (marked)"]
-    B2["Block B (swept)"]
-    B3["Block C (marked)"]
-    B4["Block B reallocated"]
-
-    %% Temporary stack objects
-    subgraph TempStack
-        T1(["Temp Object 1"])
-        T2(["Temp Object 2"])
-    end
-
-    %% Roots point to blocks
-    R1 --> B1
-    R2 --> B3
-
-    %% Heap chain (metadata next pointers)
-    B1 --> B2
-    B2 --> B3
-    B3 --> B4
-
-    %% Allocation flow
-    Alloc1([Allocate Block A]) --> Alloc2([Allocate Block B])
-    Alloc2 --> RootReg1([Register Roots A & B])
-    RootReg1 --> GCCheck1{Heap > next_threshold?}
-    GCCheck1 -- Yes --> GCStart([Start GC])
-    GCStart --> MarkPhase([Mark reachable blocks from roots])
-    MarkPhase --> SweepPhase([Free unmarked blocks])
-    SweepPhase --> StatsUpdate([Update GC stats])
-    StatsUpdate --> Alloc3([Allocate Block C])
-    Alloc3 --> Realloc1([Reallocate Block B])
-    Realloc1 --> RootUpdate([Update roots after realloc])
-    RootUpdate --> GCCheck2{Heap > next_threshold?}
-    GCCheck2 -- Yes --> GCStart
-
-    %% Temporary stack allocations
-    StartFunc([Function start: allocate temporaries]) --> T1 --> T2
-    FunctionEnd([Function ends: temporaries go out of scope]) --> GCStart
-    T1 -.-> SweepPhase
-    T2 -.-> SweepPhase
-
-    %% Program end
-    StatsUpdate --> End([Program End])
+```c
+#include "gc.h"
 ```
 
-> [!NOTE]
-> **Diagram key:**
->
-> * Blocks labeled **“marked”** are live blocks reachable via roots.
-> * Blocks labeled **“swept”** are unmarked and freed during sweep.
-> * **Reallocated** blocks show root updates.
-> * **Temporary stack objects** are collected automatically when the function scope ends.
+Initialize and destroy:
+
+```c
+t_gc_state *gc = gc_create();
+...
+gc_destroy(gc);
+```
+
+Allocate memory:
+
+```c
+int *x = gc_malloc(gc, (void **)&x, sizeof(*x));       // may contain pointers
+char *buf = gc_malloc_atomic(gc, (void **)&buf, 256); // atomic, no pointer scanning
+```
+
+Force garbage collection:
+
+```c
+gc_collect(gc);
+```
+
+> Stack-local temporaries are automatically collected when their scope ends.
 
 ---
 
-## Running Tests
+## Tests
 
-All tests use a unified runner script: **`tests.sh`**.
-
-* Make it executable:
+All tests are run via the unified script **`tests.sh`**:
 
 ```sh
 chmod +x tests.sh
+./tests.sh            # run all tests
+./tests.sh test_small # run a specific test
 ```
 
-* Run **all tests**:
+**Color scheme:**
 
-```sh
-./tests.sh
-```
+* `[TEST_*]` cyan
+* Allocation info blue
+* GC actions magenta
+* Pass/fail messages green/red
 
-* Run **a specific test**:
+### Available Tests
 
-```sh
-./tests.sh test_small
-```
-
-* Run **multiple specific tests**:
-
-```sh
-./tests.sh test_small test_stack_collect
-```
-
-All tests use a consistent **color scheme**:
-
-* `[TEST_*]` prefix: **cyan**
-* Allocations / intermediate info: **blue**
-* GC actions: **magenta**
-* Pass/fail messages: **green/red**
+| Test                   | Purpose                                                        |
+| ---------------------- | -------------------------------------------------------------- |
+| `test_small.c`         | Minimal demo: allocation, reallocation, automatic GC           |
+| `test_stack_collect.c` | Stack-local allocation collection                              |
+| `test_large.c`         | Stress test with thousands of allocations and reallocs         |
+| `test_transitive.c`    | Transitive GC: blocks reachable via other heap objects survive |
+| `test_unrooted.c`      | Confirms unrooted heap allocations are freed                   |
 
 ---
 
-### Individual Tests
+## Diagram Overview
 
-* **`test_small.c`** — Minimal demonstration
-  Shows allocation, reallocation, automatic GC, and final heap stats.
+```mermaid
+flowchart TD
+    R1([Root A]) --> B1["Block A (marked)"]
+    R2([Root B]) --> B3["Block C (marked)"]
+    B1 --> B2["Block B (swept/unrooted)"] --> B3
+    T1(["Temp Object 1"]) -.-> B2
+    T2(["Temp Object 2"]) -.-> B2
+    U1["Heap Block D (unrooted)"] -.-> B2
+    U2["Heap Block E (unrooted)"] -.-> B2
+```
 
-* **`test_stack_collect.c`** — Stack-local allocation collection
-  Confirms that temporary stack-local objects are collected automatically after their function scope ends.
-
-* **`test_large.c`** — Stress test
-  Allocates tens of thousands of small blocks, mixes atomic and non-atomic allocations, reallocations, and automatic GC.
-
-* **`test_transitive.c`** — Transitive GC test
-  Verifies that blocks reachable through other heap objects (transitive references) are preserved after GC.
-
-* **`test_unrooted.c`** — Unrooted allocation test
-  Confirms that allocations which are not registered as roots and not referenced by other heap objects are freed during GC.
+> **Legend:**
+>
+> * **Marked blocks**: live, reachable via roots
+> * **Swept/unrooted**: freed blocks
+> * **Temporary stack objects**: automatically collected
+> * **Unrooted heap blocks**: collected if not referenced by a root
