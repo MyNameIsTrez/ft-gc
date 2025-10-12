@@ -30,20 +30,24 @@ A compact, educational **garbage collector** written in C. Implements **mark-and
 
 2. **Reallocation**
 
-   * `gc_realloc` creates a new block and copies data. If the old block had a root, it updates the root to point to the new block.
+   * `gc_realloc` creates a new block and copies data.
+   * If the old block had a root, the root is updated to point to the new block.
+   * Old block is freed immediately after reallocation.
 
 3. **Garbage Collection**
 
    * Triggered manually via `gc_collect()` or automatically if `total_payload > last_live + next_threshold`.
-   * Mark-and-sweep strategy:
+   * **Mark-and-sweep strategy**:
 
-     * **Mark** all reachable blocks from roots.
-     * **Sweep** all unmarked blocks, freeing memory.
+     * **Mark**: Traverse roots and mark reachable blocks.
+     * **Sweep**: Free unmarked blocks.
+   * Updates `last_live` and calculates `next_threshold` as `max(2*last_live, GC_DEFAULT_THRESHOLD)`.
 
 4. **Root Management**
 
    * Only non-stack addresses are registered as persistent roots.
    * Stack-local variables are automatically collectible after their function scope exits.
+   * Atomic allocations (via `gc_malloc_atomic`) are not interpreted as containing pointers, but roots still track their block if provided.
 
 ---
 
@@ -77,12 +81,13 @@ flowchart TD
     RootReg1 --> GCCheck1{Heap > threshold?}
     GCCheck1 -- Yes --> GCStart([Start GC]) --> MarkPhase([Mark reachable blocks])
     MarkPhase --> SweepPhase([Free unmarked blocks]) --> StatsUpdate([Update GC stats])
-    StatsUpdate --> Alloc3([Allocate Block C]) --> Realloc1([Reallocate Block B]) --> RootUpdate([Update Roots])
+    StatsUpdate --> Alloc3([Allocate Block C]) --> Realloc1([Reallocate Block B])
+    Realloc1 --> RootUpdate([Update roots after realloc])
     RootUpdate --> GCCheck2{Heap > threshold?}
     GCCheck2 -- Yes --> GCStart
 
     StartFunc([Function start]) --> T1 --> T2
-    FunctionEnd([Function end]) --> GCStart
+    FunctionEnd([Function ends]) --> GCStart
     T1 -.-> SweepPhase
     T2 -.-> SweepPhase
 
@@ -97,7 +102,7 @@ flowchart TD
 
 ---
 
-## Eager Collection of Temporaries
+## Eager Collection of Temporaries (`test_eager.c`)
 
 ```mermaid
 flowchart TD
@@ -109,13 +114,31 @@ flowchart TD
     StartFunc([Function starts]) --> AllocTemp1[Allocate Temp A] --> Temp1
     AllocTemp1 --> AllocTemp2[Allocate Temp B] --> Temp2
 
-    FunctionEnd([Function returns]) --> GCStart([Start GC])
+    FunctionEnd([Function returns]) --> GCStart([Run gc_collect])
     Temp1 -.-> SweepPhase
     Temp2 -.-> SweepPhase
     SweepPhase --> End([Function scope cleaned])
 ```
 
-> Stack-local objects are never added as roots and are freed automatically when `gc_collect()` runs after the function returns.
+> Temporary stack objects are **not added as roots** and are freed automatically after `gc_collect()`.
+
+---
+
+## Reallocation & Root Update
+
+```mermaid
+flowchart TD
+    OldBlock[Old Block]
+    NewBlock[New Block - after gc_realloc]
+    Root[Root pointer]
+
+    Root --> OldBlock
+    gc_realloc([gc_realloc called]) --> NewBlock
+    OldBlock -.-> FreeOld[Old block freed]
+    Root --> NewBlock
+```
+
+> * Demonstrates how `gc_realloc` creates a new block, copies data, frees the old block, and updates any root pointing to the old block.
 
 ---
 
@@ -195,5 +218,6 @@ gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined 
 * Mark-and-sweep GC with manual root management.
 * Handles atomic and non-atomic allocations.
 * Temporary stack allocations are automatically collectible.
+* Realloc updates roots correctly.
 * Single-threaded, not suitable for multi-threaded production.
 * Debug output provides detailed allocation, collection, and root tracking.
