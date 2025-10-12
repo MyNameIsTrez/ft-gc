@@ -1,15 +1,17 @@
 #include "gc.h"
-
 #include <stdio.h>
+#include <stdlib.h>
 
 int main(void)
 {
     t_gc_state *gc = gc_create();
     if (!gc)
-        return 1;
+        return EXIT_FAILURE;
 
     int *p;
     int *q;
+
+    printf("\033[36m[TEST_SMALL]\033[0m Starting small allocation test\n");
 
     /* Minimal example demonstrating automatic collection */
     for (int i = 0; i < 5; i++)
@@ -19,20 +21,20 @@ int main(void)
         *p = i;
         *q = i * 2;
 
-        /* Realloc q to demonstrate automatic root update */
-        q = gc_realloc(gc, q, 2 * sizeof(*q));
+        printf("\033[34m[TEST_SMALL]\033[0m Iteration %d: allocated p=%p q=%p (p=%d, q=%d)\n",
+               i, (void*)p, (void*)q, *p, *q);
 
-#ifdef GC_DEBUG
-        printf("\033[34m[TEST_SMALL]\033[0m Iteration %d, heap size: %zu\n", i, gc_get_heap_size(gc));
-#endif
+        q = gc_realloc(gc, q, 2 * sizeof(*q));
+        printf("\033[34m[TEST_SMALL]\033[0m Reallocated q=%p\n", (void*)q);
     }
 
-    /* Collect and print final stats */
+    printf("\033[35m[TEST_SMALL]\033[0m Forcing GC...\n");
     gc_collect(gc);
 
     printf("\033[36m[TEST_SMALL]\033[0m Final stats:\n");
     gc_print_stats(gc);
 
     gc_destroy(gc);
-    return 0;
+    printf("\033[32m[TEST_SMALL]\033[0m Finished successfully\n");
+    return EXIT_SUCCESS;
 }

@@ -128,11 +128,11 @@ gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined 
 
 ---
 
-### `test_eager.c` — Eager collection demonstration
+### `test_stack_collect.c` — TODO: ?
 
 ```sh
-gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c tests/test_eager.c -Igc -o test_eager && \
-./test_eager
+gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c tests/test_stack_collect.c -Igc -o test_stack_collect && \
+./test_stack_collect
 ```
 
 *Confirms temporary stack objects are collected immediately after function scope exits.*
