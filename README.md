@@ -8,8 +8,10 @@
 
 A compact **mark-and-sweep garbage collector** in C. Supports:
 
-* **Manual root registration** (for heap persistence)
-* **Collection of unrooted allocations** (including stack-local objects) when `gc_collect()` is called
+* **Manual root registration** — all allocations must pass a variable address to register a root
+* **Automatic collection** of GC-managed blocks when `gc_collect()` is called
+* **Atomic allocations** — blocks that do not contain pointers are not scanned
+* **Strict allocation rules** — `gc_malloc()`, `gc_malloc_atomic()`, and `gc_realloc()` require valid roots; errors are reported if rules are violated
 
 Use `-DGC_DEBUG` to see detailed GC operations.
 
@@ -35,14 +37,14 @@ gc_destroy(gc);
 
 ### Allocate Memory
 
-**Persistent (rooted) allocations** — must pass a pointer to register as a root:
+**Persistent (rooted) allocations** — pass a pointer to register as a root:
 
 ```c
 int *x = gc_malloc(gc, (void **)&x, sizeof(*x));       // may contain pointers
 char *buf = gc_malloc_atomic(gc, (void **)&buf, 256); // atomic, no pointer scanning
 ```
 
-> ⚠ Root registration is required for the object to survive garbage collection. If you pass `NULL` as the root, the allocation is **unrooted** and may be collected on the next `gc_collect()`.
+> ⚠ Root registration is required. Passing `NULL` as the root returns `NULL` and prints a `[GC ERROR]` message.
 
 ---
 
@@ -52,7 +54,7 @@ char *buf = gc_malloc_atomic(gc, (void **)&buf, 256); // atomic, no pointer scan
 gc_collect(gc);
 ```
 
-> Stack-local and unrooted allocations that are no longer referenced can be freed during a collection. This only happens when you call `gc_collect()` — nothing runs automatically on scope exit.
+> Stack-local allocations remain collectible only when `gc_collect()` is called.
 
 ---
 
@@ -64,7 +66,8 @@ q = gc_realloc(gc, q, new_size);
 
 * Updates root pointer automatically if one exists
 * Old block is freed after copying data
-* If the pointer was not allocated by GC, standard `realloc()` is used
+* Must be called on GC-managed blocks; reallocating a non-GC pointer returns `NULL` and prints `[GC ERROR]`
+* Reallocating `NULL` is not allowed — use `gc_malloc()` with a valid root instead
 
 ---
 
@@ -84,6 +87,7 @@ chmod +x tests.sh
 * Allocation info blue
 * GC actions magenta
 * Pass/fail messages green/red
+* Errors `[GC ERROR]` red
 
 ### Available Tests
 
@@ -92,5 +96,4 @@ chmod +x tests.sh
 | `test_small.c`         | Minimal demo: allocation, reallocation, automatic GC               |
 | `test_stack_collect.c` | Stack-local allocation collection (requires `gc_collect()`)        |
 | `test_large.c`         | Stress test with hundreds of thousands of allocations and reallocs |
-| `test_transitive.c`    | Transitive GC: blocks reachable via other heap objects survive     |
-| `test_unrooted.c`      | Confirms unrooted heap allocations are freed                       |
+| `test_unrooted.c`      | Confirms that allocations with `NULL` root are rejected            |
