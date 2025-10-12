@@ -14,6 +14,17 @@ It provides automatic memory management with basic mark-and-sweep collection, ma
 
 ---
 
+## Design Overview
+
+### Memory Model
+
+* **Blocks (`t_gc_block`)**: Metadata per allocation: `size`, `atomic`, `marked`, payload pointer, link to root, next block.
+* **Roots (`t_gc_root`)**: Pointers referencing allocated blocks for marking.
+* **State (`t_gc_state`)**: Tracks allocated blocks, roots, heap size, and collection thresholds.
+* **Stack base**: Approximate stack address recorded at `gc_create` to avoid registering stack-local pointers as persistent roots.
+
+---
+
 ## Combined Master Lifecycle Diagram
 
 > [!TIP]
@@ -73,7 +84,65 @@ flowchart TD
 > * **Red blocks** = unmarked, freed during sweep.
 > * **Yellow blocks** = reallocated blocks with updated roots.
 > * **Orange blocks** = temporary stack-local objects, automatically freed when scope ends.
-> * This diagram visualizes both the **persistent root-managed heap** and **eagerly collected temporaries** in one view.
+> * This diagram visualizes both the **persistent root-managed heap** and **eagerly collected temporaries**.
+
+---
+
+## Mermaid Diagram: Eager Collection of Temporary Stack Objects
+
+> [!TIP]
+> Illustrates temporary stack-local objects being collected once they go out of scope.
+
+```mermaid
+flowchart TD
+    subgraph FunctionScope
+        Temp1([Temporary Object A])
+        Temp2([Temporary Object B])
+    end
+
+    StartFunc([Function starts]) --> AllocTemp1[Allocate Temp A] --> Temp1
+    AllocTemp1 --> AllocTemp2[Allocate Temp B] --> Temp2
+
+    FunctionEnd([Function returns]) --> GCStart([Start GC])
+    Temp1 -.-> SweepPhase
+    Temp2 -.-> SweepPhase
+    SweepPhase --> End([Function scope cleaned])
+```
+
+> [!NOTE]
+>
+> * Temporary objects are **not registered as roots**.
+> * They are freed automatically during sweep after scope exits.
+
+---
+
+## Mermaid Diagram: Allocation & Collection Timeline
+
+> [!TIP]
+> Visualizes multiple allocations, GC runs, and heap growth over time (`test_large.c`).
+
+```mermaid
+timeline
+    title Heap Allocation & Garbage Collection Timeline
+
+    0 : Allocate Block A
+    1 : Allocate Block B
+    2 : Allocate Block C
+    3 : GC Run #1 (threshold exceeded)
+    4 : Sweep unmarked blocks
+    5 : Allocate Block D
+    6 : Allocate Block E
+    7 : Reallocate Block B
+    8 : GC Run #2 (threshold exceeded)
+    9 : Sweep unmarked blocks
+    10: Allocate Block F
+```
+
+> [!NOTE]
+>
+> * Each step shows allocation, reallocation, or GC.
+> * Sweeping removes unmarked blocks including temporary stack objects.
+> * Demonstrates dynamic threshold-triggered garbage collection.
 
 ---
 
