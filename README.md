@@ -122,20 +122,25 @@ flowchart TD
 > Visualizes multiple allocations, GC runs, and heap growth over time (`test_large.c`).
 
 ```mermaid
-timeline
-    title Heap Allocation & Garbage Collection Timeline
+flowchart TD
+    subgraph AllocationTimeline["Heap Allocation & Garbage Collection Timeline"]
+        A0([Start Program])
+        A1([Allocate Block A])
+        A2([Allocate Block B])
+        A3([Allocate Block C])
+        GC1([GC Run #1 (threshold exceeded)])
+        Sweep1([Sweep unmarked blocks])
+        A4([Allocate Block D])
+        A5([Allocate Block E])
+        Realloc1([Reallocate Block B])
+        GC2([GC Run #2 (threshold exceeded)])
+        Sweep2([Sweep unmarked blocks])
+        A6([Allocate Block F])
+        End([End Program])
+    end
 
-    0 : Allocate Block A
-    1 : Allocate Block B
-    2 : Allocate Block C
-    3 : GC Run #1 (threshold exceeded)
-    4 : Sweep unmarked blocks
-    5 : Allocate Block D
-    6 : Allocate Block E
-    7 : Reallocate Block B
-    8 : GC Run #2 (threshold exceeded)
-    9 : Sweep unmarked blocks
-    10: Allocate Block F
+    %% Connect events vertically
+    A0 --> A1 --> A2 --> A3 --> GC1 --> Sweep1 --> A4 --> A5 --> Realloc1 --> GC2 --> Sweep2 --> A6 --> End
 ```
 
 > [!NOTE]
