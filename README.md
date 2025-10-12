@@ -123,24 +123,33 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    subgraph AllocationTimeline["Heap Allocation & Garbage Collection Timeline"]
-        A0([Start Program])
-        A1([Allocate Block A])
-        A2([Allocate Block B])
-        A3([Allocate Block C])
-        GC1([GC Run #1 - threshold exceeded])
-        Sweep1([Sweep unmarked blocks])
-        A4([Allocate Block D])
-        A5([Allocate Block E])
-        Realloc1([Reallocate Block B])
-        GC2([GC Run #2 - threshold exceeded])
-        Sweep2([Sweep unmarked blocks])
-        A6([Allocate Block F])
-        End([End Program])
-    end
+    A0([Start Program])
+    A1([Allocate Block A])
+    A2([Allocate Block B])
+    A3([Allocate Block C])
+    GC1([GC Run 1 - threshold exceeded])
+    Sweep1([Sweep unmarked blocks])
+    A4([Allocate Block D])
+    A5([Allocate Block E])
+    Realloc1([Reallocate Block B])
+    GC2([GC Run 2 - threshold exceeded])
+    Sweep2([Sweep unmarked blocks])
+    A6([Allocate Block F])
+    End([End Program])
 
-    %% Connect events vertically
-    A0 --> A1 --> A2 --> A3 --> GC1 --> Sweep1 --> A4 --> A5 --> Realloc1 --> GC2 --> Sweep2 --> A6 --> End
+    %% Connect vertically
+    A0 --> A1
+    A1 --> A2
+    A2 --> A3
+    A3 --> GC1
+    GC1 --> Sweep1
+    Sweep1 --> A4
+    A4 --> A5
+    A5 --> Realloc1
+    Realloc1 --> GC2
+    GC2 --> Sweep2
+    Sweep2 --> A6
+    A6 --> End
 ```
 
 > [!NOTE]
