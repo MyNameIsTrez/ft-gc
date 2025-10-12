@@ -106,12 +106,12 @@ flowchart TD
     StatsUpdate --> End([Program End])
 ```
 
-> **Notes on diagram:**
->
-> * Blocks labeled “marked” are live blocks reachable via roots
-> * Blocks labeled “swept” are unmarked and freed during sweep
-> * Reallocated blocks show root updates
-> * Temporary stack objects are collected eagerly when function scope ends
+> [!NOTE]  
+> **Diagram key:**  
+> * Blocks labeled **“marked”** are live blocks reachable via roots.  
+> * Blocks labeled **“swept”** are unmarked and freed during sweep.  
+> * **Reallocated** blocks show root updates.  
+> * **Temporary stack objects** are collected eagerly when the function scope ends.
 
 ---
 
