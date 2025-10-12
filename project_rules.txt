@@ -1,0 +1,52 @@
+# Naming
+- Structure names: start with `s_`, typedefs: `t_`, unions: `u_`, enums: `e_`, globals: `g_`.
+- Identifiers: lowercase, digits, and underscores only (snake_case).
+- Files and directories: lowercase, digits, and underscores only.
+- Use explicit, readable names with underscores between words.
+- No global variables unless marked const or static.
+- Code must compile.
+
+# Formatting
+- Functions: max 25 lines.
+- Lines: max 80 columns.
+- Indentation: 4-char tabs.
+- Empty lines: one between functions, no consecutive empty lines.
+- Declarations: at the start of functions, one per line.
+- Variable names: indented consistently.
+- Operators and operands: one space apart.
+- Braces: on their own line except for structs, enums, unions.
+- Control structures: braces required unless single instruction.
+
+# Functions
+- Max 4 named parameters.
+- Function prototypes must explicitly include `void` for no arguments.
+- Return type and name: one tab space between.
+- Max 5 variables per function.
+
+# Typedef, Struct, Enum, Union
+- `struct`, `enum`, `union`: space after keyword.
+- Indent new type names consistently.
+- Declare structs in header files, not C files.
+
+# Headers
+- Header files: only includes, declarations, defines, and prototypes.
+- Protect against double inclusion using `#ifndef`.
+- No C files included in headers.
+
+# Macros and Pre-processors
+- #define: for constants only, no obfuscation.
+- No multiline macros.
+- Macro names: uppercase.
+- Use `#pragma once` for header guards.
+
+# Forbidden
+- `for`, `do...while`, `switch`, `case`, `goto`, ternary operators, VLAs, implicit type declarations.
+
+# Comments
+- No comments inside function bodies.
+- Comments in English, useful, and placed at the end of lines or on their own line.
+- Avoid carryall functions and obfuscation.
+
+# Files
+- No `.c` files included in other `.c` files.
+- Max 5 function definitions per `.c` file.
