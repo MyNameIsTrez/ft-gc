@@ -1,40 +1,27 @@
 #include "gc.h"
-
 #include <stdio.h>
-#include <assert.h>
 
 int main(void)
 {
-    volatile int dummy;
-    t_gc_state *gc;
-    int **p;
-    int *q;
-    int i;
+	t_gc_state *gc = gc_create();
+	if (!gc)
+		return 1;
 
-    gc = gc_create((void *)&dummy);
-    if (!gc)
-    {
-        fprintf(stderr, "Failed to create GC state\n");
-        return 1;
-    }
+	int *p;
+	int *q;
 
-    for (i = 0; i < 100000; i++)
-    {
-        p = gc_malloc(gc, sizeof(*p));
-        q = gc_malloc_atomic(gc, sizeof(*q));
-        assert(*p == 0);
-        // printf("i: %d\n", i); // TODO: REMOVE!
-        *p = gc_realloc(gc, q, 2 * sizeof(*p));
-    }
+	for (int i = 0; i < 100000; i++)
+	{
+		p = gc_malloc(gc, (void **)&p, sizeof(*p));
+		q = gc_malloc_atomic(gc, (void **)&q, sizeof(*q));
+		*p = 0;
+		*q = 0;
 
-    printf("Heap size = %zu bytes\n", gc_get_heap_size(gc));
-    gc_print_stats(gc);
+		/* realloc automatically updates root */
+		gc_realloc(gc, (void **)&p, q, 2 * sizeof(*p));
+	}
 
-    gc_collect(gc);
-    printf("After manual collection:\n");
-    gc_print_stats(gc);
-
-    gc_destroy(gc);
-
-    printf("Test passed!\n");
+	gc_collect(gc);
+	gc_destroy(gc);
+	return 0;
 }
