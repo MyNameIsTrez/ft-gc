@@ -3,7 +3,7 @@
 > [!NOTE]
 > Developed with guidance from ChatGPT (OpenAI GPT-5 model). All generated code and explanations were manually reviewed and adapted to fit the 42 C coding style.
 
-A compact, educational **garbage collector** written in C. Implements **mark-and-sweep GC**, manual root registration, and **eager collection of temporary stack objects**. Debug mode outputs detailed logging of allocations, frees, and roots.
+A compact, educational **garbage collector** written in C. Implements **mark-and-sweep GC**, manual root registration, and **automatic collection of stack-local objects**. Debug mode outputs detailed logging of allocations, frees, and roots.
 
 > [!TIP]
 > Compile with `-DGC_DEBUG` to see debug GC operations.
@@ -39,7 +39,8 @@ A compact, educational **garbage collector** written in C. Implements **mark-and
    * Triggered manually via `gc_collect()` or automatically if `total_payload > last_live + next_threshold`.
    * **Mark-and-sweep strategy**:
 
-     * **Mark**: Traverse roots and mark reachable blocks.
+     * **Mark**: Traverse roots and mark reachable blocks.  
+       *With transitive GC enabled, blocks reachable through other heap pointers are also marked.*
      * **Sweep**: Free unmarked blocks.
    * Updates `last_live` and calculates `next_threshold` as `max(2*last_live, GC_DEFAULT_THRESHOLD)`.
 
@@ -104,18 +105,28 @@ flowchart TD
 
     %% Program end
     StatsUpdate --> End([Program End])
-```
+````
 
-> [!NOTE]  
-> **Diagram key:**  
-> * Blocks labeled **“marked”** are live blocks reachable via roots.  
-> * Blocks labeled **“swept”** are unmarked and freed during sweep.  
-> * **Reallocated** blocks show root updates.  
-> * **Temporary stack objects** are collected eagerly when the function scope ends.
+> [!NOTE]
+> **Diagram key:**
+>
+> * Blocks labeled **“marked”** are live blocks reachable via roots.
+> * Blocks labeled **“swept”** are unmarked and freed during sweep.
+> * **Reallocated** blocks show root updates.
+> * **Temporary stack objects** are collected automatically when the function scope ends.
 
 ---
 
 ## Running Tests
+
+All tests use a consistent **color scheme**:
+
+* `[TEST_*]` prefix: **cyan**
+* Allocations / intermediate info: **blue**
+* GC actions: **magenta**
+* Pass/fail messages: **green/red**
+
+---
 
 ### `test_small.c` — Minimal demonstration
 
@@ -128,14 +139,14 @@ gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined 
 
 ---
 
-### `test_stack_collect.c` — TODO: ?
+### `test_stack_collect.c` — Stack-local allocation collection
 
 ```sh
 gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c tests/test_stack_collect.c -Igc -o test_stack_collect && \
 ./test_stack_collect
 ```
 
-*Confirms temporary stack objects are collected immediately after function scope exits.*
+*Confirms that temporary stack-local objects are collected automatically after their function scope exits.*
 
 ---
 
@@ -148,9 +159,13 @@ gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined 
 
 *Allocates tens of thousands of small blocks, mixes atomic and non-atomic allocations, reallocations, and automatic GC.*
 
-### `test_transitive.c` — Stress test
+---
+
+### `test_transitive.c` — Transitive GC test
 
 ```sh
 gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c tests/test_transitive.c -Igc -o test_transitive && \
 ./test_transitive
 ```
+
+*Verifies that blocks reachable through other heap objects (transitive references) are preserved after GC.*
