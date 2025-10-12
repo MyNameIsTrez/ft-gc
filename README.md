@@ -123,33 +123,35 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A0([Start Program])
-    A1([Allocate Block A])
-    A2([Allocate Block B])
-    A3([Allocate Block C])
-    GC1([GC Run 1 - threshold exceeded])
-    Sweep1([Sweep unmarked blocks])
-    A4([Allocate Block D])
-    A5([Allocate Block E])
-    Realloc1([Reallocate Block B])
-    GC2([GC Run 2 - threshold exceeded])
-    Sweep2([Sweep unmarked blocks])
-    A6([Allocate Block F])
-    End([End Program])
+    Start[Start Program & create GC state]
 
-    %% Connect vertically
-    A0 --> A1
-    A1 --> A2
-    A2 --> A3
-    A3 --> GC1
-    GC1 --> Sweep1
-    Sweep1 --> A4
-    A4 --> A5
-    A5 --> Realloc1
-    Realloc1 --> GC2
-    GC2 --> Sweep2
-    Sweep2 --> A6
-    A6 --> End
+    IterStart[Iteration i]
+    AllocP[gc_malloc p]
+    AllocQ[gc_malloc_atomic q]
+    StoreValues[Store values in p and q]
+    ReallocQ[q = gc_realloc q]
+    ThresholdCheck[Heap > next_threshold?]
+    AutoGC[Automatic GC triggered]
+    ProgressPrint[Print progress every 10,000 iterations]
+    IterEnd[End Iteration]
+
+    FinalCollect[Final gc_collect]
+    PrintStats[Print final stats]
+    DestroyGC[gc_destroy]
+    End[Program End]
+
+    %% Connections
+    Start --> IterStart
+    IterStart --> AllocP
+    AllocP --> AllocQ
+    AllocQ --> StoreValues
+    StoreValues --> ReallocQ
+    ReallocQ --> ThresholdCheck
+    ThresholdCheck -- Yes --> AutoGC --> IterEnd
+    ThresholdCheck -- No --> IterEnd
+    IterEnd --> ProgressPrint --> IterStart
+    IterStart --> FinalCollect
+    FinalCollect --> PrintStats --> DestroyGC --> End
 ```
 
 > [!NOTE]
