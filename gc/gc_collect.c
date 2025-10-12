@@ -36,6 +36,6 @@ void gc_print_stats(t_gc_state *gc)
         count++;
         block = block->next;
     }
-    fprintf(stderr, "\033[36m[STATS]\033[0m blocks=%zu payload=%zu threshold=%zu\n",
+    fprintf(stdout, "\033[36m[STATS]\033[0m blocks=%zu payload=%zu threshold=%zu\n",
             count, gc->total_payload, gc->next_threshold);
 }
