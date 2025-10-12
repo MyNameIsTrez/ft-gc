@@ -5,9 +5,8 @@
  * @file gc.h
  * @brief A simple mark-and-sweep garbage collector for C.
  *
- * Provides managed heap allocations with optional persistent roots,
- * automatic collection of stack-local objects, and support for
- * atomic (non-pointer) blocks.
+ * Provides managed heap allocations with mandatory root registration,
+ * atomic (non-pointer) blocks, and manual collection via gc_collect().
  */
 
 #define GC_DEFAULT_THRESHOLD 1048576  /**< Default GC growth threshold in bytes (1 MiB) */
@@ -33,8 +32,7 @@ typedef struct s_gc_block
  * @struct s_gc_root
  * @brief Tracks a root pointer for GC marking.
  *
- * Roots point to blocks that should not be collected.
- * Non-rooted stack allocations can still exist but are collectible when out of scope.
+ * All allocations must have a root variable associated.
  */
 typedef struct s_gc_root
 {
@@ -85,8 +83,7 @@ void gc_destroy(t_gc_state *gc);
 /**
  * @brief Allocate a new managed block.
  * @param gc GC state pointer.
- * @param root_addr Optional address of a pointer to register as a root.
- *                  Pass NULL if this allocation is temporary.
+ * @param root_addr Address of a pointer to register as a root (cannot be NULL).
  * @param size Number of bytes to allocate.
  * @return Pointer to allocated memory (payload) or NULL on failure.
  *
@@ -97,8 +94,7 @@ void *gc_malloc(t_gc_state *gc, void **root_addr, size_t size);
 /**
  * @brief Allocate a new atomic block (contains no pointers).
  * @param gc GC state pointer.
- * @param root_addr Optional address of a pointer to register as a root.
- *                  Pass NULL if temporary.
+ * @param root_addr Address of a pointer to register as a root (cannot be NULL).
  * @param size Number of bytes to allocate.
  * @return Pointer to allocated memory or NULL on failure.
  *
@@ -109,12 +105,13 @@ void *gc_malloc_atomic(t_gc_state *gc, void **root_addr, size_t size);
 /**
  * @brief Reallocate a GC-managed block to a new size.
  * @param gc GC state pointer.
- * @param ptr Pointer to an existing GC-managed block payload.
+ * @param ptr Pointer to an existing GC-managed block payload (cannot be NULL).
  * @param newsize New size in bytes.
  * @return Pointer to reallocated memory payload or NULL on failure.
  *
  * If the block has a root, the root pointer is updated automatically.
  * The old block is freed after the copy.
+ * Reallocating non-GC pointers returns an error.
  */
 void *gc_realloc(t_gc_state *gc, void *ptr, size_t newsize);
 
