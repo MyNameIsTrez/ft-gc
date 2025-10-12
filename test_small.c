@@ -22,13 +22,16 @@ int main(void)
         q = gc_realloc(gc, q, 2 * sizeof(*q));
 
 #ifdef GC_DEBUG
-        printf("[TEST_SMALL] Iteration %d, heap size: %zu\n", i, gc_get_heap_size(gc));
+        printf("\033[34m[TEST_SMALL]\033[0m Iteration %d, heap size: %zu\n", i, gc_get_heap_size(gc));
 #endif
     }
 
     /* Collect and print final stats */
     gc_collect(gc);
+
+    printf("\033[36m[TEST_SMALL]\033[0m Final stats:\n");
     gc_print_stats(gc);
+
     gc_destroy(gc);
     return 0;
 }

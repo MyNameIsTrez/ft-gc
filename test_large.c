@@ -21,14 +21,17 @@ int main(void)
         /* Realloc q periodically */
         q = gc_realloc(gc, q, 2 * sizeof(*q));
 
-        /* Print progress every 10000 iterations */
+        /* Print progress every 10,000 iterations */
         if (i % 10000 == 0)
-            printf("[TEST_LARGE] Iteration %d, heap size: %zu\n", i, gc_get_heap_size(gc));
+            printf("\033[34m[TEST_LARGE]\033[0m Iteration %d, heap size: %zu\n", i, gc_get_heap_size(gc));
     }
 
     /* Final collection and stats */
     gc_collect(gc);
+
+    printf("\033[36m[TEST_LARGE]\033[0m Final stats:\n");
     gc_print_stats(gc);
+
     gc_destroy(gc);
     return 0;
 }

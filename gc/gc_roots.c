@@ -16,6 +16,6 @@ void gc_add_root(t_gc_state *gc, void **addr, t_gc_block *block)
         block->root = root;
 
 #ifdef GC_DEBUG
-    printf("[minigc] ROOT ADD root=%p block=%p addr=%p\n", (void*)root, (void*)block, (void*)addr);
+    printf("\033[36m[ROOT ADD]\033[0m root=%p block=%p addr=%p\n", (void*)root, (void*)block, (void*)addr);
 #endif
 }

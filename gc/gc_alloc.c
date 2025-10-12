@@ -67,7 +67,7 @@ void *gc_realloc(t_gc_state *gc, void *ptr, size_t newsize)
     gc_free_block(gc, prev, old);
 
 #ifdef GC_DEBUG
-    printf("[minigc] REALLOC old=%p new=%p size=%zu\n", (void*)old, (void*)nb, newsize);
+    printf("\033[33m[REALLOC]\033[0m old=%p new=%p size=%zu\n", (void*)old, (void*)nb, newsize);
 #endif
 
     return nb->payload;
