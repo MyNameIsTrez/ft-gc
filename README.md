@@ -39,7 +39,7 @@ A compact, educational **garbage collector** written in C. Implements **mark-and
    * Triggered manually via `gc_collect()` or automatically if `total_payload > last_live + next_threshold`.
    * **Mark-and-sweep strategy**:
 
-     * **Mark**: Traverse roots and mark reachable blocks.  
+     * **Mark**: Traverse roots and mark reachable blocks.
        *With transitive GC enabled, blocks reachable through other heap pointers are also marked.*
      * **Sweep**: Free unmarked blocks.
    * Updates `last_live` and calculates `next_threshold` as `max(2*last_live, GC_DEFAULT_THRESHOLD)`.
@@ -105,7 +105,7 @@ flowchart TD
 
     %% Program end
     StatsUpdate --> End([Program End])
-````
+```
 
 > [!NOTE]
 > **Diagram key:**
@@ -119,6 +119,32 @@ flowchart TD
 
 ## Running Tests
 
+All tests use a unified runner script: **`tests.sh`**.
+
+* Make it executable:
+
+```sh
+chmod +x tests.sh
+```
+
+* Run **all tests**:
+
+```sh
+./tests.sh
+```
+
+* Run **a specific test**:
+
+```sh
+./tests.sh test_small
+```
+
+* Run **multiple specific tests**:
+
+```sh
+./tests.sh test_small test_stack_collect
+```
+
 All tests use a consistent **color scheme**:
 
 * `[TEST_*]` prefix: **cyan**
@@ -128,43 +154,16 @@ All tests use a consistent **color scheme**:
 
 ---
 
-### `test_small.c` — Minimal demonstration
+### Individual Tests
 
-```sh
-gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c tests/test_small.c -Igc -o test_small && \
-./test_small
-```
+* **`test_small.c`** — Minimal demonstration
+  Shows allocation, reallocation, automatic GC, and final heap stats.
 
-*Shows allocation, reallocation, automatic GC, and final heap stats.*
+* **`test_stack_collect.c`** — Stack-local allocation collection
+  Confirms that temporary stack-local objects are collected automatically after their function scope ends.
 
----
+* **`test_large.c`** — Stress test
+  Allocates tens of thousands of small blocks, mixes atomic and non-atomic allocations, reallocations, and automatic GC.
 
-### `test_stack_collect.c` — Stack-local allocation collection
-
-```sh
-gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c tests/test_stack_collect.c -Igc -o test_stack_collect && \
-./test_stack_collect
-```
-
-*Confirms that temporary stack-local objects are collected automatically after their function scope exits.*
-
----
-
-### `test_large.c` — Stress test
-
-```sh
-gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c tests/test_large.c -Igc -o test_large && \
-./test_large
-```
-
-*Allocates tens of thousands of small blocks, mixes atomic and non-atomic allocations, reallocations, and automatic GC.*
-
----
-
-### `test_transitive.c` — Transitive GC test
-
-```sh
-gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c tests/test_transitive.c -Igc -o test_transitive && ./test_transitive
-```
-
-*Verifies that blocks reachable through other heap objects (transitive references) are preserved after GC.*
+* **`test_transitive.c`** — Transitive GC test
+  Verifies that blocks reachable through other heap objects (transitive references) are preserved after GC.

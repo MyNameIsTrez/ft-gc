@@ -1,0 +1,24 @@
+name: ft-gc Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install build essentials
+        run: sudo apt-get update && sudo apt-get install -y build-essential
+
+      - name: Make tests.sh executable
+        run: chmod +x ./tests.sh
+
+      - name: Run all tests
+        run: ./tests.sh
