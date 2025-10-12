@@ -1,4 +1,5 @@
 #include "gc.h"
+
 #include <stdio.h>
 
 int main(void)

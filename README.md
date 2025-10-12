@@ -120,7 +120,7 @@ flowchart TD
 ### `test_small.c` — Minimal demonstration
 
 ```sh
-gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c test_small.c -Igc -o test_small
+gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c tests/test_small.c -Igc -o test_small && \
 ./test_small
 ```
 
@@ -131,7 +131,7 @@ gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined 
 ### `test_eager.c` — Eager collection demonstration
 
 ```sh
-gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c test_eager.c -Igc -o test_eager
+gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c tests/test_eager.c -Igc -o test_eager && \
 ./test_eager
 ```
 
@@ -142,8 +142,15 @@ gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined 
 ### `test_large.c` — Stress test
 
 ```sh
-gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c test_large.c -Igc -o test_large
+gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c tests/test_large.c -Igc -o test_large && \
 ./test_large
 ```
 
 *Allocates tens of thousands of small blocks, mixes atomic and non-atomic allocations, reallocations, and automatic GC.*
+
+### `test_transitive.c` — Stress test
+
+```sh
+gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c tests/test_transitive.c -Igc -o test_transitive && \
+./test_transitive
+```

@@ -35,7 +35,7 @@ void *gc_malloc_atomic(t_gc_state *gc, void **root_addr, size_t size)
 void *gc_realloc(t_gc_state *gc, void *ptr, size_t newsize)
 {
     if (!ptr)
-        return NULL;
+        return gc_malloc(gc, NULL, newsize);
 
     t_gc_block *old = gc_find_block(gc, (uintptr_t)ptr);
     if (!old)
