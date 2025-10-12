@@ -167,3 +167,6 @@ All tests use a consistent **color scheme**:
 
 * **`test_transitive.c`** — Transitive GC test
   Verifies that blocks reachable through other heap objects (transitive references) are preserved after GC.
+
+* **`test_unrooted.c`** — Unrooted allocation test
+  Confirms that allocations which are not registered as roots and not referenced by other heap objects are freed during GC.
