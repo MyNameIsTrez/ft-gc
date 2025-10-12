@@ -6,6 +6,8 @@ Here’s a **simplified README** that keeps the essential information but trims 
 
 > [!NOTE]
 > Developed with guidance from ChatGPT (OpenAI GPT-5 model).
+
+> [!WARNING]
 > **Disclaimer for 42 students:** Do **not** blindly copy-paste this code. Use it only for learning and reference.
 
 A compact **mark-and-sweep garbage collector** in C. Supports **manual root registration** and **automatic collection of stack-local objects**. Use `-DGC_DEBUG` to see detailed GC operations.
