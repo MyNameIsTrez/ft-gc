@@ -1,16 +1,12 @@
 # ft-gc
 
 > [!NOTE]
-> This project was developed with heavy assistance from ChatGPT (OpenAI’s GPT-5 model).
-> All generated code and explanations were carefully reviewed, tested, and adjusted manually to ensure correctness, style compliance, and alignment with the 42 school’s C coding standards.
+> Developed with guidance from ChatGPT (OpenAI GPT-5 model). All generated code and explanations were manually reviewed and adapted to fit the 42 C coding style.
 
----
-
-A compact, educational **garbage collector** implementation written in C, following the **42 school network’s strict C code style**.
-It provides automatic memory management with basic mark-and-sweep collection, manual root registration, and optional debug logging.
+A compact, educational **garbage collector** written in C. Implements **mark-and-sweep GC**, manual root registration, and **eager collection of temporary stack objects**. Debug mode outputs colored logging of allocations, frees, and roots.
 
 > [!TIP]
-> Pass the `-DGC_DEBUG` flag when compiling to enable colored debug output showing allocations, collections, and root operations.
+> Compile with `-DGC_DEBUG` to see detailed GC operations in color.
 
 ---
 
@@ -18,80 +14,90 @@ It provides automatic memory management with basic mark-and-sweep collection, ma
 
 ### Memory Model
 
-* **Blocks (`t_gc_block`)**: Metadata per allocation: `size`, `atomic`, `marked`, payload pointer, link to root, next block.
-* **Roots (`t_gc_root`)**: Pointers referencing allocated blocks for marking.
-* **State (`t_gc_state`)**: Tracks allocated blocks, roots, heap size, and collection thresholds.
-* **Stack base**: Approximate stack address recorded at `gc_create` to avoid registering stack-local pointers as persistent roots.
+* **Blocks (`t_gc_block`)**: Each allocation has metadata including `size`, `atomic` flag, `marked`, payload pointer, root pointer, and next block pointer.
+* **Roots (`t_gc_root`)**: Persistent pointers into the heap for marking reachable objects.
+* **State (`t_gc_state`)**: Tracks blocks, roots, total payload, last live size, next collection threshold, and an approximate stack base.
+* **Stack base**: Recorded at `gc_create()` to detect stack-local pointers and prevent registering them as persistent roots.
 
 ---
 
-## Combined Master Lifecycle Diagram
+## Core Principles
 
-> [!TIP]
-> Green = live/marked blocks, Red = freed/swept blocks, Yellow = reallocated blocks, Orange = temporary stack-local objects.
+1. **Allocation**
+
+   * `gc_malloc` / `gc_malloc_atomic` allocate memory and optionally register a persistent root.
+   * Temporary stack-local allocations (inside function scopes) are not registered as roots and are collectible once they go out of scope.
+
+2. **Reallocation**
+
+   * `gc_realloc` creates a new block and copies data. If the old block had a root, it updates the root to point to the new block.
+
+3. **Garbage Collection**
+
+   * Triggered manually via `gc_collect()` or automatically if `total_payload > last_live + next_threshold`.
+   * Mark-and-sweep strategy:
+
+     * **Mark** all reachable blocks from roots.
+     * **Sweep** all unmarked blocks, freeing memory.
+
+4. **Root Management**
+
+   * Only non-stack addresses are registered as persistent roots.
+   * Stack-local variables are automatically collectible after their function scope exits.
+
+---
+
+## Garbage Collector Lifecycle
 
 ```mermaid
 flowchart TD
-    %% Persistent Roots
     subgraph Roots
         R1([Root A])
         R2([Root B])
     end
 
-    %% Heap blocks
     B1["<span style='color:green'>Block A (marked)</span>"]
     B2["<span style='color:red'>Block B (swept)</span>"]
     B3["<span style='color:green'>Block C (marked)</span>"]
     B4["<span style='color:yellow'>Block B reallocated</span>"]
 
-    %% Temporary stack objects
     subgraph TempStack
         T1["<span style='color:orange'>Temp Object 1</span>"]
         T2["<span style='color:orange'>Temp Object 2</span>"]
     end
 
-    %% Root connections
     R1 --> B1
     R2 --> B3
 
-    %% Heap links
     B1 --> B2
     B2 --> B3
     B3 --> B4
 
-    %% Allocation flow
-    Alloc1([Allocate Block A]) --> Alloc2([Allocate Block B]) --> RootReg1([Register Roots A & B])
+    Alloc1([Allocate Block A]) --> Alloc2([Allocate Block B]) --> RootReg1([Register Roots])
     RootReg1 --> GCCheck1{Heap > threshold?}
-    GCCheck1 -- Yes --> GCStart([Start GC]) --> MarkPhase([Mark Phase: mark reachable blocks])
-    MarkPhase --> SweepPhase([Sweep Phase: free unmarked blocks]) --> StatsUpdate([Update GC stats])
-    StatsUpdate --> Alloc3([Allocate Block C]) --> Realloc1([Reallocate Block B]) --> RootUpdate([Update Roots after realloc])
+    GCCheck1 -- Yes --> GCStart([Start GC]) --> MarkPhase([Mark reachable blocks])
+    MarkPhase --> SweepPhase([Free unmarked blocks]) --> StatsUpdate([Update GC stats])
+    StatsUpdate --> Alloc3([Allocate Block C]) --> Realloc1([Reallocate Block B]) --> RootUpdate([Update Roots])
     RootUpdate --> GCCheck2{Heap > threshold?}
     GCCheck2 -- Yes --> GCStart
 
-    %% Temporary stack allocations
-    StartFunc([Function start: allocate temporaries]) --> T1 --> T2
-    FunctionEnd([Function end: scope exits]) --> GCStart
+    StartFunc([Function start]) --> T1 --> T2
+    FunctionEnd([Function end]) --> GCStart
     T1 -.-> SweepPhase
     T2 -.-> SweepPhase
 
-    %% Program end
     StatsUpdate --> End([Program End])
 ```
 
-> [!NOTE]
->
-> * **Green blocks** = live/marked persistent allocations.
-> * **Red blocks** = unmarked, freed during sweep.
-> * **Yellow blocks** = reallocated blocks with updated roots.
-> * **Orange blocks** = temporary stack-local objects, automatically freed when scope ends.
-> * This diagram visualizes both the **persistent root-managed heap** and **eagerly collected temporaries**.
+> **Color code:**
+> *Green* = live/persistent blocks
+> *Red* = freed blocks
+> *Yellow* = reallocated blocks
+> *Orange* = temporary stack-local objects
 
 ---
 
-## Mermaid Diagram: Eager Collection of Temporary Stack Objects
-
-> [!TIP]
-> Illustrates temporary stack-local objects being collected once they go out of scope.
+## Eager Collection of Temporaries
 
 ```mermaid
 flowchart TD
@@ -109,17 +115,11 @@ flowchart TD
     SweepPhase --> End([Function scope cleaned])
 ```
 
-> [!NOTE]
->
-> * Temporary objects are **not registered as roots**.
-> * They are freed automatically during sweep after scope exits.
+> Stack-local objects are never added as roots and are freed automatically when `gc_collect()` runs after the function returns.
 
 ---
 
-## Mermaid Diagram: Allocation & Collection Timeline
-
-> [!TIP]
-> Visualizes multiple allocations, GC runs, and heap growth over time (`test_large.c`).
+## Allocation & Collection Timeline (`test_large.c`)
 
 ```mermaid
 flowchart TD
@@ -140,7 +140,6 @@ flowchart TD
     DestroyGC[gc_destroy]
     End[Program End]
 
-    %% Connections
     Start --> IterStart
     IterStart --> AllocP
     AllocP --> AllocQ
@@ -154,66 +153,47 @@ flowchart TD
     FinalCollect --> PrintStats --> DestroyGC --> End
 ```
 
-> [!NOTE]
->
-> * Each step shows allocation, reallocation, or GC.
-> * Sweeping removes unmarked blocks including temporary stack objects.
-> * Demonstrates dynamic threshold-triggered garbage collection.
-
 ---
 
 ## Running Tests
 
-### `test_small.c`
-
-**Purpose:** Minimal demonstration of allocation, reallocation, and automatic garbage collection.
+### `test_small.c` — Minimal demonstration
 
 ```sh
-gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c test_small.c -Igc -o test_small && ./test_small
+gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c test_small.c -Igc -o test_small
+./test_small
 ```
 
-> [!TIP]
-> Final stats show remaining live blocks after `gc_collect()`.
+*Shows allocation, reallocation, automatic GC, and final heap stats.*
 
 ---
 
-### `test_eager.c`
-
-**Purpose:** Demonstrates **eager collection** of temporary stack-scoped objects.
+### `test_eager.c` — Eager collection demonstration
 
 ```sh
-gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c test_eager.c -Igc -o test_eager && ./test_eager
+gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c test_eager.c -Igc -o test_eager
+./test_eager
 ```
 
-> [!IMPORTANT]
-> Temporary objects created inside a function are freed immediately after the function returns when `gc_collect()` is called.
-> Confirms stack-scoped objects are collectible.
+*Confirms temporary stack objects are collected immediately after function scope exits.*
 
 ---
 
-### `test_large.c`
-
-**Purpose:** Stress test to validate GC behavior under heavy load.
+### `test_large.c` — Stress test
 
 ```sh
-gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c test_large.c -Igc -o test_large && ./test_large
+gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c test_large.c -Igc -o test_large
+./test_large
 ```
 
-> [!WARNING]
-> Allocates tens of thousands of small blocks. Monitor memory usage if running on low-RAM environments.
-
-> [!TIP]
-> Mix of atomic and non-atomic allocations tests proper root tracking and heap management.
-> Final stats display live block count and payload size.
+*Allocates tens of thousands of small blocks, mixes atomic and non-atomic allocations, reallocations, and automatic GC.*
 
 ---
 
 ## Notes
 
-> [!NOTE]
->
-> * Mark-and-sweep GC with explicit root management.
-> * Handles both atomic and non-atomic allocations.
-> * Temporary stack allocations are automatically collectible.
-> * Single-threaded; not suitable for multi-threaded production use.
-> * Debug output provides detailed allocation, collection, and root tracking.
+* Mark-and-sweep GC with manual root management.
+* Handles atomic and non-atomic allocations.
+* Temporary stack allocations are automatically collectible.
+* Single-threaded, not suitable for multi-threaded production.
+* Debug output provides detailed allocation, collection, and root tracking.
