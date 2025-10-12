@@ -1,9 +1,16 @@
 #include "gc_internal.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 static void *gc_malloc_internal(t_gc_state *gc, void **root_addr, size_t size, int atomic)
 {
+    if (!root_addr)
+    {
+        fprintf(stderr, "\033[31m[GC ERROR]\033[0m root_addr must not be NULL. All allocations must pass variable address.\n");
+        return NULL;
+    }
+
     if (size == 0)
         size = 1;
 
@@ -12,9 +19,7 @@ static void *gc_malloc_internal(t_gc_state *gc, void **root_addr, size_t size, i
         return NULL;
 
     memset(block->payload, 0, size);
-
-    if (root_addr)
-        gc_add_root(gc, root_addr, block);
+    gc_add_root(gc, root_addr, block);
 
     if (gc->total_payload > gc->last_live + gc->next_threshold)
         gc_collect(gc);
@@ -35,11 +40,17 @@ void *gc_malloc_atomic(t_gc_state *gc, void **root_addr, size_t size)
 void *gc_realloc(t_gc_state *gc, void *ptr, size_t newsize)
 {
     if (!ptr)
-        return gc_malloc(gc, NULL, newsize);
+    {
+        fprintf(stderr, "\033[31m[GC ERROR]\033[0m cannot realloc a NULL pointer; use gc_malloc() with a valid root.\n");
+        return NULL;
+    }
 
     t_gc_block *old = gc_find_block(gc, (uintptr_t)ptr);
     if (!old)
-        return realloc(ptr, newsize);
+    {
+        fprintf(stderr, "\033[31m[GC ERROR]\033[0m cannot realloc non-GC pointer; all reallocations must be on GC-managed blocks.\n");
+        return NULL;
+    }
 
     t_gc_block *nb = gc_create_block(gc, newsize, old->atomic);
     if (!nb)
