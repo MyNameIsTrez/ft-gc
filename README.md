@@ -71,25 +71,3 @@ chmod +x tests.sh
 | `test_large.c`         | Stress test with thousands of allocations and reallocs         |
 | `test_transitive.c`    | Transitive GC: blocks reachable via other heap objects survive |
 | `test_unrooted.c`      | Confirms unrooted heap allocations are freed                   |
-
----
-
-## Diagram Overview
-
-```mermaid
-flowchart TD
-    R1([Root A]) --> B1["Block A (marked)"]
-    R2([Root B]) --> B3["Block C (marked)"]
-    B1 --> B2["Block B (swept/unrooted)"] --> B3
-    T1(["Temp Object 1"]) -.-> B2
-    T2(["Temp Object 2"]) -.-> B2
-    U1["Heap Block D (unrooted)"] -.-> B2
-    U2["Heap Block E (unrooted)"] -.-> B2
-```
-
-> **Legend:**
->
-> * **Marked blocks**: live, reachable via roots
-> * **Swept/unrooted**: freed blocks
-> * **Temporary stack objects**: automatically collected
-> * **Unrooted heap blocks**: collected if not referenced by a root
