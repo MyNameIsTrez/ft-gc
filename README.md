@@ -164,8 +164,7 @@ gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined 
 ### `test_transitive.c` — Transitive GC test
 
 ```sh
-gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c tests/test_transitive.c -Igc -o test_transitive && \
-./test_transitive
+gcc -DGC_DEBUG -Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined gc/*.c tests/test_transitive.c -Igc -o test_transitive && ./test_transitive
 ```
 
 *Verifies that blocks reachable through other heap objects (transitive references) are preserved after GC.*
