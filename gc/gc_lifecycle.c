@@ -7,6 +7,14 @@ t_gc_state *gc_create(void)
     if (!gc)
         return NULL;
     gc->next_threshold = GC_DEFAULT_THRESHOLD;
+
+    /* Record an approximate stack base address. gc_create is normally called
+       from main() so this gives us a stable reference point for stack detection. */
+    {
+        volatile char stack_marker = 0;
+        gc->stack_base = (void *)&stack_marker;
+    }
+
     return gc;
 }
 

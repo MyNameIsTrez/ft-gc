@@ -27,6 +27,7 @@ typedef struct s_gc_state
     size_t total_payload;
     size_t last_live;
     size_t next_threshold;
+    void *stack_base; /* approximate stack base recorded at gc_create */
 } t_gc_state;
 
 t_gc_state *gc_create(void);
