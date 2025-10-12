@@ -18,7 +18,7 @@ It provides automatic memory management with basic mark-and-sweep collection, ma
 
 ### Memory Model
 
-* **Blocks (`t_gc_block`)**: Metadata per allocation: `size`, `atomic`, `marked`, payload pointer, link to root, and next block.
+* **Blocks (`t_gc_block`)**: Metadata per allocation: `size`, `atomic`, `marked`, payload pointer, link to root, next block.
 * **Roots (`t_gc_root`)**: Pointers referencing allocated blocks for marking.
 * **State (`t_gc_state`)**: Tracks allocated blocks, roots, heap size, and collection thresholds.
 * **Stack base**: Approximate stack address recorded at `gc_create` to avoid registering stack-local pointers as persistent roots.
@@ -48,32 +48,42 @@ It provides automatic memory management with basic mark-and-sweep collection, ma
 
 ---
 
-## Diagram of GC Internals
-
-```
-+-----------------+           +-----------------+
-|   Root List     | --------> |   t_gc_block 1  |
-| (persistent ptr)|           +-----------------+
-|                 |           | payload         |
-|                 |           | size            |
-|                 |           | marked          |
-+-----------------+           | atomic          |
-                              | next -> ...     |
-                              +-----------------+
-                              |   t_gc_block 2  |
-                              +-----------------+
-                              | payload         |
-                              | size            |
-                              | marked          |
-                              | atomic          |
-                              | next -> ...     |
-                              +-----------------+
-```
+## Mark-and-Sweep Diagram
 
 > [!NOTE]
-> Mark phase: traverse roots → mark reachable blocks (`marked = 1`).
-> Sweep phase: traverse blocks → free unmarked blocks.
-> Temporary stack objects are not linked in the root list and can be collected once out of scope.
+> The following diagram illustrates the GC process. Green blocks are **marked** (live), red blocks are **swept** (freed).
+
+```
+Root List
++-------------+
+|  root1 ---> |---------------------------+
+|  root2 ---> |                           |
++-------------+                           |
+                                          |
+          +-----------------+             |
+          |  t_gc_block 1   |  marked ✅   |
+          | payload: 0x1000 |------------>|
+          | size: 4         |             |
+          | marked: 1       |             |
+          | atomic: 0       |             |
+          +-----------------+             |
+          |  t_gc_block 2   |  marked ❌  | <-- swept
+          | payload: 0x1010 |             |
+          | size: 8         |             |
+          | marked: 0       |             |
+          | atomic: 1       |             |
+          +-----------------+             |
+          |  t_gc_block 3   |  marked ✅  |
+          | payload: 0x1020 |------------>|
+          | size: 12        |
+          | marked: 1       |
+          | atomic: 0       |
+          +-----------------+
+```
+
+> [!TIP]
+> **Mark phase**: Traverse roots → mark reachable blocks (`marked = 1`).
+> **Sweep phase**: Traverse blocks → free unmarked blocks. Temporary stack objects are not linked in the root list and are collectible once out of scope.
 
 ---
 
