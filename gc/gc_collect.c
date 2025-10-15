@@ -4,10 +4,10 @@
 void gc_collect(t_gc_state *gc)
 {
 #ifdef GC_DEBUG
-    printf("\033[35m[COLLECT START]\033[0m total_payload=%zu\n", gc->total_payload);
+    printf("\033[35m[COLLECT START]\033[0m total_payload=%zu\n", gc->total_payload); // rsp=0x7fffffffd670
 #endif
 
-    gc_mark_from_roots(gc);
+    gc_mark_from_roots(gc); // rsp=0x7fffffffd670
     gc_sweep(gc);
 
     gc->last_live = gc->total_payload;

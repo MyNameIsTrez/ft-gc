@@ -3,19 +3,19 @@
 
 t_gc_state *gc_create(void)
 {
-    t_gc_state *gc = calloc(1, sizeof(t_gc_state));
+    t_gc_state *gc = calloc(1, sizeof(t_gc_state)); // rsp=0x7fffffffd6e0
     if (!gc)
         return NULL;
     gc->next_threshold = GC_DEFAULT_THRESHOLD;
 
-    /* Record an approximate stack base address. gc_create is normally called
-       from main() so this gives us a stable reference point for stack detection. */
+    /* Record approximate stack base */
     {
         volatile char stack_marker = 0;
-        gc->stack_base = (void *)&stack_marker;
+        gc->stack_base = (void *)&stack_marker; // rsp=0x7fffffffd6e0
+        printf("gc->stack_base: %p\n", gc->stack_base); // TODO: REMOVE!
     }
 
-    return gc;
+    return gc; // rsp=0x7fffffffd6e0
 }
 
 void gc_destroy(t_gc_state *gc)

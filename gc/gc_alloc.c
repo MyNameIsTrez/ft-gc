@@ -7,7 +7,7 @@ static void *gc_malloc_internal(t_gc_state *gc, void **root_addr, size_t size, i
 {
     if (!root_addr)
     {
-        fprintf(stderr, "\033[31m[GC ERROR]\033[0m root_addr must not be NULL. All allocations must pass variable address.\n");
+        fprintf(stderr, "\033[31m[GC ERROR]\033[0m root_addr must not be NULL.\n");
         return NULL;
     }
 
@@ -21,6 +21,7 @@ static void *gc_malloc_internal(t_gc_state *gc, void **root_addr, size_t size, i
     memset(block->payload, 0, size);
     gc_add_root(gc, root_addr, block);
 
+    /* Automatic collection if threshold exceeded */
     if (gc->total_payload > gc->last_live + gc->next_threshold)
         gc_collect(gc);
 
@@ -48,7 +49,7 @@ void *gc_realloc(t_gc_state *gc, void *ptr, size_t newsize)
     t_gc_block *old = gc_find_block(gc, (uintptr_t)ptr);
     if (!old)
     {
-        fprintf(stderr, "\033[31m[GC ERROR]\033[0m cannot realloc non-GC pointer; all reallocations must be on GC-managed blocks.\n");
+        fprintf(stderr, "\033[31m[GC ERROR]\033[0m cannot realloc non-GC pointer.\n");
         return NULL;
     }
 

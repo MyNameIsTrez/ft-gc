@@ -1,5 +1,9 @@
 # ft-gc
 
+> [!CAUTION]
+> This garbage collector repository isn't usable.
+> It uses the stack address of variables to automatically determine lifetimes, but that's Undefined Behavior according to the C standard, and so it doesn't work with AddressSanitizer.
+
 > [!NOTE]
 > Developed with guidance from ChatGPT (OpenAI GPT-5 model).
 
